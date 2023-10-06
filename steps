@@ -1,0 +1,13 @@
+//Steps to build the Voice Assistant Project using Python.
+
+1.import some modules.
+
+2. Followed by this, we will be building the voice assistant and create function to speak using the voice engine
+
+3. Then we create the function to wish, get the name of the user and command
+
+4. Next, we will be writing functions to do various tasks like getting a weather report, sending mail, etc.
+
+5. Finally, we write the while loop to run the assistant continuously. In which we take the command and check the command to do the respective task using if else statements.
+
+6. Note that all the tasks we include are our choice. Depending on your comfort, you can add required commands and remove the ones that you don’t need. And make the voice assistant based on your suitability.
