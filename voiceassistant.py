@@ -49,8 +49,8 @@ def speak(text):
     else:
         speak("Good Evening sir or madam!")
 
-    asname ="Jasper 1 point o"
-    speak("I am your Voice Assistant from DataFlair,")
+    asname ="Jamin 1 point o"
+    speak("I am your Voice Assistant from opera,")
     speak(asname)
     print("I am your Voice Assistant,",asname)
 def getName():
@@ -146,7 +146,7 @@ def getNews():
         command = takeCommand().lower()
         print(command)
 
-        if "jarvis" in command:
+        if "jamin" in command:
             wish()
             
         elif 'how are you' in command:
@@ -154,7 +154,7 @@ def getNews():
             speak("How are you, ")
             speak(uname)
 
-        elif "good morning" in command or "good afternoon" in command or "good evening" in command:
+     elif "good morning" in command or "good afternoon" in command or "good evening" in command:
             speak("A very" +command)
             speak("Thank you for wishing me! Hope you are doing well!")
 
@@ -296,11 +296,11 @@ def getNews():
 
             #Creating the main window 
 wn = tkinter.Tk() 
-wn.title("DataFlair Voice Assistant")
+wn.title("Opera Voice Assistant")
 wn.geometry('700x300')
-wn.config(bg='LightBlue1')
+wn.config(bg='Blue')
   
-Label(wn, text='Welcome to meet the Voice Assistant by DataFlair', bg='LightBlue1',
+Label(wn, text='Welcome to meet the Voice Assistant by Opera', bg='Blue',
       fg='black', font=('Courier', 15)).place(x=50, y=10)
 
 #Button to convert PDF to Audio form
@@ -308,7 +308,7 @@ Button(wn, text="Start", bg='gray',font=('Courier', 15),
        command=callVoiceAssistant).place(x=290, y=100)
 
 showCommand=StringVar()
-cmdLabel=Label(wn, textvariable=showCommand, bg='LightBlue1',
+cmdLabel=Label(wn, textvariable=showCommand, bg='Blue',
       fg='black', font=('Courier', 15))
 cmdLabel.place(x=250, y=150)
 
