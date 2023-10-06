@@ -1,703 +1,316 @@
-from __future__ import print_function
-import speech_recognition as sr
-import os
-import time
-from gtts import gTTS
-import datetime
-import pyjokes
-import warnings
-import webbrowser
-import calendar
+\\ pip install wolframalpha
+\\pip install pyttsx3
+\\pip install wikipedia
+\\pip install winshell
+\\pip install pyjokes
+\\pip install smtplib
+\\pip install twilio
+\\pip install beautifulsoup4
+\\pip install tk
+import subprocess
+import wolframalpha
 import pyttsx3
 import random
-import smtplib
+import speech_recognition as sr
 import wikipedia
-import playsound
-import wolframalpha
-import requests
-import json
+import webbrowser
+import os
 import winshell
-import subprocess
-import ctypes
+import pyjokes
+import json
+import feedparser
+import smtplib
+import datetime 
+import requests
 from twilio.rest import Client
-import pickle
-import os.path
-from googleapiclient.discovery import build
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
-from selenium import webdriver
-from time import sleep
-
-warnings.filterwarnings("ignore")
-
-engine = pyttsx3.init()
-voices = engine.getProperty("voices")
-engine.setProperty("voice", voices[0].id)
-
-SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
-
-
-def talk(audio):
-    engine.say(audio)
-    engine.runAndWait()
-
-
-def rec_audio():
-    recog = sr.Recognizer()
-
-    with sr.Microphone() as source:
-        print("Listening...")
-        audio = recog.listen(source)
-
-    data = " "
-
-    try:
-        data = recog.recognize_google(audio)
-        print("You said: " + data)
-    except sr.UnknownValueError:
-        print("Assistant could not understand the audio")
-    except sr.RequestError as ex:
-        print("Request Error from Google Speech Recognition" + ex)
-
-    return data
-
-
-def response(text):
-    print(text)
-    tts = gTTS(text=text, lang="en")
-    audio = "Audio.mp3"
-    tts.save(audio)
-    playsound.playsound(audio)
-    os.remove(audio)
-
-
-
-def call(text):
-    action_call = "assistant"
-
-    text = text.lower()
-
-    if action_call in text:
-        return True
-
-    return False
-
-
-def today_date():
-    now = datetime.datetime.now()
-    date_now = datetime.datetime.today()
-    week_now = calendar.day_name[date_now.weekday()]
-    month_now = now.month
-    day_now = now.day
-
-    months = [
-        "January",
-        "February",
-        "March",
-        "April",
-        "May",
-        "June",
-        "July",
-        "August",
-        "September",
-        "October",
-        "November",
-        "December",
-    ]
-
-    ordinals = [
-        "1st",
-        "2nd",
-        "3rd",
-        "4th",
-        "5th",
-        "6th",
-        "7th",
-        "8th",
-        "9th",
-        "10th",
-        "11th",
-        "12th",
-        "13th",
-        "14th",
-        "15th",
-        "16th",
-        "17th",
-        "18th",
-        "19th",
-        "20th",
-        "21st",
-        "22nd",
-        "23rd",
-        "24th",
-        "25th",
-        "26th",
-        "27th",
-        "28th",
-        "29th",
-        "30th",
-        "31st",
-    ]
-
-    return "Today is " + week_now + ", " + months[month_now - 1] + " the " + ordinals[day_now - 1] + "."
-
-
-def say_hello(text):
-    greet = ["hi", "hey", "hola", "greetings", "wassup", "hello"]
-
-    response = ["howdy", "whats good", "hello", "hey there"]
-
-    for word in text.split():
-        if word.lower() in greet:
-            return random.choice(response) + "."
-
-    return ""
-
-
-def wiki_person(text):
-    list_wiki = text.split()
-    for i in range(0, len(list_wiki)):
-        if i + 3 <= len(list_wiki) - 1 and list_wiki[i].lower() == "who" and list_wiki[i + 1].lower() == "is":
-            return list_wiki[i + 2] + " " + list_wiki[i + 3]
-
-
-def send_email(to, content):
-    server = smtplib.SMTP("smtp.gmail.com", 587)
-    server.ehlo()
-    server.starttls()
-
-    # Enable low security in gmail
-    server.login("email", "pass")
-    server.sendmail("email", to, content)
-    server.close()
-
-
-def note(text):
-    date = datetime.datetime.now()
-    file_name = str(date).replace(":", "-") + "-note.txt"
-    with open(file_name, "w") as f:
-        f.write(text)
-
-    subprocess.Popen(["notepad.exe", file_name])
-
-
-def google_calendar():
-    """Shows basic usage of the Google Calendar API.
-    Prints the start and name of the next 10 events on the user's calendar.
-    """
-    creds = None
-    if os.path.exists('token.pickle'):
-        with open('token.pickle', 'rb') as token:
-            creds = pickle.load(token)
-
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                '../../Voice Assistant/credentials.json', SCOPES)
-            creds = flow.run_local_server(port=0)
-
-        with open('token.pickle', 'wb') as token:
-            pickle.dump(creds, token)
-
-    service = build('calendar', 'v3', credentials=creds)
-
-    return service
-
-
-def calendar_events(num, service):
-    talk(f'Hey there! Good Day. Hope you are doing fine. These are the events to do today')
-    # Call the Calendar API
-    now = datetime.datetime.utcnow().isoformat() + 'Z'  # 'Z' indicates UTC time
-    print(f'Getting the upcoming {num} events')
-    events_result = service.events().list(calendarId='primary', timeMin=now, maxResults=num, singleEvents=True,
-                                          orderBy='startTime').execute()
-    events = events_result.get('items', [])
-
-    if not events:
-        talk('No upcoming events found.')
-    for event in events:
-        start = event['start'].get('dateTime', event['start'].get('date'))
-        events_today = (event['summary'])
-        start_time = str(start.split("T")[1].split("-")[0])  # get the hour the event starts
-        if int(start_time.split(":")[0]) < 12:  # if the event is in the morning
-            start_time = start_time + "am"
-        else:
-            start_time = str(int(start_time.split(":")[0]) - 12)  # convert 24 hour time to regular
-            start_time = start_time + "pm"
-        talk(f'{events_today} at {start_time}')
-
-
-try:
-    service = google_calendar()
-    calendar_events(10, service)
-except:
-    talk("Could not connect to the local wifi network. Please try again later.")
-    exit()
-
-
-def pizza():
-    driver = webdriver.Chrome(
-        r"C:\...\chromedriver.exe"  # Location of your webdriver
-    )
-    driver.maximize_window()  # Maximizes the browser window
-
-    talk("Opening Dominos")
-    driver.get('https://www.dominos.co.in/')  # Open the site
-    sleep(2)
-
-    talk("Getting ready to order")
-    driver.find_element_by_link_text('ORDER ONLINE NOW').click()  # Click on order now button
-    sleep(2)
-
-    talk("Finding your location")
-    driver.find_element_by_class_name('srch-cnt-srch-inpt').click()  # Click on the location search
-    sleep(2)
-
-    location = ""  # Enter your location
-
-    talk("Entering your location")
-    driver.find_element_by_xpath(
-        '//*[@id="__next"]/div/div[1]/div[2]/div/div[1]/div/div[3]/div/div[1]/div[2]/div/div[1]/input').send_keys(
-        location)  # Send text to location search input field
-    sleep(2)
-
-    driver.find_element_by_xpath(
-        '//*[@id="__next"]/div/div[1]/div[2]/div/div[1]/div/div[3]/div/div[1]/div[2]/div[2]/div/ul/li[1]').click()  # Select the location from suggestions
-    sleep(2)
-
-    try:
-        driver.find_element_by_xpath(
-            '//*[@id="__next"]/div/div/div[1]/div[1]/div/div[3]/div[3]/div[1]/div[2]').click()  # Click on login button
-        sleep(2)
-    except:
-        talk("Your location could not be found. Please try again later.")
-        exit()
-
-    talk("Logging in")
-    phone_num = ""  # Enter your phone number here
-
-    driver.find_element_by_xpath(
-        '//*[@id="__next"]/div/div/div[1]/div[1]/div/div[3]/div[3]/div[2]/div/div[3]/div/div/div/div[2]/div/form/div[1]/div[2]/input').send_keys(
-        phone_num)  # Send text to phone number input field
-    sleep(2)
-
-    driver.find_element_by_xpath(
-        '//*[@id="__next"]/div/div/div[1]/div[1]/div/div[3]/div[3]/div[2]/div/div[3]/div/div/div/div[2]/div/form/div[2]/input').click()
-    sleep(2)
-
-    talk("What is your O T P? ")
-    sleep(3)
-
-    otp_log = rec_audio()
-
-    driver.find_element_by_xpath(
-        '//*[@id="__next"]/div/div/div[1]/div[1]/div/div[3]/div[3]/div[2]/div/div[3]/div/div/div/div[2]/div/div/div/div[1]/input').send_keys(
-        otp_log)  # Paste the OTP into the text field
-    sleep(2)
-
-    driver.find_element_by_xpath(
-        '//*[@id="__next"]/div/div/div[1]/div[1]/div/div[3]/div[3]/div[2]/div/div[3]/div/div/div/div[2]/div/div/div/div[2]/div[2]/button/span').click()  # Submit OTP
-    sleep(2)
-
-    talk("Do you want me to order from your favorites?")
-    query_fav = rec_audio()
-
-    if "yes" in query_fav:
-        try:
-            driver.find_element_by_xpath(
-                '//*[@id="mn-lft"]/div[6]/div/div[6]/div/div/div[2]/div[3]/div/button/span').click()  # Add your favorite pizza
-            sleep(1)
-        except:
-            talk("The entered OTP is incorrect.")
-            exit()
-
-        talk("Adding your favorites to cart")
-        talk("Do you want me to add extra cheese to your pizza?")
-        ex_cheese = rec_audio()
-        if "yes" in ex_cheese:
-            talk("Extra cheese added")
-            driver.find_element_by_xpath(
-                '//*[@id="mn-lft"]/div[6]/div/div[1]/div/div/div[2]/div[3]/div[2]/button').click()  # Add extra cheese
-        elif "no" in ex_cheese:
-            driver.find_element_by_xpath(
-                '//*[@id="mn-lft"]/div[6]/div/div[1]/div/div/div[2]/div[3]/div[1]/button/span').click()
-        else:
-            talk("I dont know that")
-            driver.find_element_by_xpath(
-                '//*[@id="mn-lft"]/div[6]/div/div[1]/div/div/div[2]/div[3]/div[1]/button/span').click()
-
-        driver.find_element_by_xpath(
-            '//*[@id="mn-lft"]/div[16]/div/div[1]/div/div/div[2]/div[2]/div/button').click()  # Add a pepsi
-        sleep(1)
-
-        talk("Would you like to increase the qty?")
-        qty = rec_audio()
-        qty_pizza = 0
-        qty_pepsi = 0
-        if "yes" in qty:
-            talk("Would you like to increase the quantity of pizza?")
-            wh_qty = rec_audio()
-            if "yes" in wh_qty:
-                talk("How many more pizzas would you like to add? ")
-                try:
-                    qty_pizza = rec_audio()
-                    qty_pizza = int(qty_pizza)
-                    if qty_pizza > 0:
-                        talk_piz = f"Adding {qty_pizza} more pizzas"
-                        talk(talk_piz)
-                        for i in range(qty_pizza):
-                            driver.find_element_by_xpath(
-                                '//*[@id="__next"]/div/div/div[1]/div[2]/div[2]/div[2]/div[2]/div/div/div[1]/div[1]/div/div/div[2]/div/div/div[2]').click()
-                except:
-                    talk("I dont know that.")
-            else:
-                pass
-
-            talk("Would you like to increase the quantity of pepsi?")
-            pep_qty = rec_audio()
-            if "yes" in pep_qty:
-                talk("How many more pepsis would you like to add? ")
-                try:
-                    qty_pepsi = rec_audio()
-                    qty_pepsi = int(qty_pepsi)
-                    if qty_pepsi > 0:
-                        talk_pep = f"Adding {qty_pepsi} more pepsis"
-                        talk(talk_pep)
-                        for i in range(qty_pepsi):
-                            driver.find_element_by_xpath(
-                                '//*[@id="__next"]/div/div/div[1]/div[2]/div[2]/div[2]/div[2]/div/div/div[1]/div[2]/div/div/div[2]/div/div/div[2]').click()
-                except:
-                    talk("I dont know that.")
-            else:
-                pass
-
-        elif "no" in qty:
-            pass
-
-        total_pizza = qty_pizza + 1
-        total_pepsi = qty_pepsi + 1
-        tell_num = f"This is your list of order. {total_pizza} Pizzas and {total_pepsi} Pepsis. Do you want to checkout?"
-        talk(tell_num)
-        check_order = rec_audio()
-        if "yes" in check_order:
-            talk("Checking out")
-            driver.find_element_by_xpath(
-                '//*[@id="__next"]/div/div/div[1]/div[2]/div[2]/div[2]/div[2]/div/div/div[2]/div[2]/button').click()  # Click on checkout button
-            sleep(1)
-            total = driver.find_element_by_xpath(
-                '//*[@id="__next"]/div/div[1]/div[2]/div[3]/div[2]/div/div[6]/div/div/div[6]/span[2]/span')
-            total_price = f'total price is {total.text}'
-            talk(total_price)
-            sleep(1)
-        else:
-            exit()
-
-        talk("Placing your order")
-        driver.find_element_by_xpath(
-            '//*[@id="__next"]/div/div[1]/div[2]/div[3]/div[2]/div/div[6]/div/div/div[8]/button').click()  # Click on place order button
-        sleep(2)
-
-        talk("Saving your location")
-        driver.find_element_by_xpath(
-            '//*[@id="__next"]/div/div[1]/div[2]/div[3]/div[2]/div/div[3]/div/div[3]/div/div/div[3]/div/div/input').click()  # Save your location
-        sleep(2)
-
-        talk("Do you want to confirm your order?")
-        confirm = rec_audio()
-        if "yes" in confirm:
-            try:
-                driver.find_element_by_xpath(
-                    '//*[@id="__next"]/div/div[1]/div[2]/div/div[1]/div[2]/div/div[2]/div/div[2]/button').click()
-                sleep(2)
-            except:
-                talk("The store is currently offline.")
-                exit()
-
-            talk("Placing your order")
-
-            talk("Your order is places successfully. Wait for Dominos to deliver your order. Enjoy your day!")
-        else:
-            exit()
+from bs4 import BeautifulSoup
+import win32com.client as wincl
+from urllib.request import urlopen
+
+
+voiceEngine = pyttsx3.init('sapi5')
+voices = voiceEngine.getProperty('voices')
+voiceEngine.setProperty('voice', voices[1].id)
+
+def speak(text):
+    voiceEngine.say(text)
+    voiceEngine.runAndWait()
+
+    def wish():
+    print("Wishing.")
+    time = int(datetime.datetime.now().hour)
+    global uname,asname
+    if time>= 0 and time<12:
+        speak("Good Morning sir or madam!")
+
+    elif time<18:
+        speak("Good Afternoon sir or madam!")
 
     else:
-        exit()
+        speak("Good Evening sir or madam!")
 
+    asname ="Jasper 1 point o"
+    speak("I am your Voice Assistant from DataFlair,")
+    speak(asname)
+    print("I am your Voice Assistant,",asname)
+def getName():
+    global uname
+    speak("Can I please know your name?")
+    uname = takeCommand()
+    print("Name:",uname)
+    speak("I am glad to know you!")
+    columns = shutil.get_terminal_size().columns
+    speak("How can i Help you, ")
+    speak(uname)
 
-while True:
+def takeCommand():
+    recog = sr.Recognizer()
+    
+    with sr.Microphone() as source:
+        print("Listening to the user")
+        recog.pause_threshold = 1
+        userInput = recog.listen(source)
 
     try:
-        text = rec_audio()
-        speak = ""
+        print("Recognizing the command")
+        command = recog.recognize_google(userInput, language ='en-in')
+        print(f"Command is: {command}\n")
 
-        if call(text):
+    except Exception as e:
+        print(e)
+        print("Unable to Recognize the voice.")
+        return "None"
 
-            speak = speak + say_hello(text)
+    return command
 
-            if "date" in text or "day" in text or "month" in text:
-                get_today = today_date()
-                speak = speak + " " + get_today
+def sendEmail(to, content):
+    print("Sending mail to ", to)
+    server = smtplib.SMTP('smtp.gmail.com', 587)
+    server.ehlo()
+    server.starttls()
+    #paste your email id and password in the respective places
+    server.login('your email id', 'password') 
+    server.sendmail('your email id', to, content)
+    server.close()
 
-            elif "time" in text:
-                now = datetime.datetime.now()
-                meridiem = ""
-                if now.hour >= 12:
-                    meridiem = "p.m"
-                    hour = now.hour - 12
-                else:
-                    meridiem = "a.m"
-                    hour = now.hour
+def getWeather(city_name):
+    cityName=place.get() #getting input of name of the place from user
+    baseUrl = "http://api.openweathermap.org/data/2.5/weather?" #base url from where we extract weather report
+    url = baseUrl + "appid=" + 'd850f7f52bf19300a9eb4b0aa6b80f0d' + "&q=" + cityName  
+    response = requests.get(url)
+    x = response.json()
 
-                if now.minute < 10:
-                    minute = "0" + str(now.minute)
-                else:
-                    minute = str(now.minute)
-                speak = speak + " " + "It is " + str(hour) + ":" + minute + " " + meridiem + " ."
+    #If there is no error, getting all the weather conditions
+    if x["cod"] != "404":
+        y = x["main"]
+        temp = y["temp"]
+        temp-=273 
+        pressure = y["pressure"]
+        humidity = y["humidity"]
+        desc = x["weather"]
+        description = z[0]["description"]
+        info=(" Temperature= " +str(temp)+"°C"+"\n atmospheric pressure (hPa) ="+str(pressure) +"\n humidity = " +str(humidity)+"%" +"\n description = " +str(description))
+        print(info)
+        speak("Here is the weather report at")
+        speak(city_name)
+        speak(info)
+    else:
+        speak(" City Not Found ")
 
-            elif "wikipedia" in text or "Wikipedia" in text:
-                if "who is" in text:
-                    person = wiki_person(text)
-                    wiki = wikipedia.summary(person, sentences=2)
-                    speak = speak + " " + wiki
+def getNews():
+    try:
+        response = requests.get('https://www.bbc.com/news')
+  
+        b4soup = BeautifulSoup(response.text, 'html.parser')
+        headLines = b4soup.find('body').find_all('h3')
+        unwantedLines = ['BBC World News TV', 'BBC World Service Radio',
+                    'News daily newsletter', 'Mobile app', 'Get in touch']
 
-            elif "where is" in text:
-                ind = text.lower().split().index("is")
-                location = text.split()[ind + 1:]
-                url = "https://www.google.com/maps/place/" + "".join(location)
-                speak = speak + "This is where " + str(location) + " is."
-                webbrowser.open(url)
+        for x in list(dict.fromkeys(headLines)):
+            if x.text.strip() not in unwantedLines:
+                print(x.text.strip())
+    except Exception as e:
+        print(str(e))
 
-            elif "what is the weather in" in text:
-                key = ""
-                weather_url = "http://api.openweathermap.org/data/2.5/weather?"
-                ind = text.split().index("in")
-                location = text.split()[ind + 1:]
-                location = "".join(location)
-                url = weather_url + "appid=" + key + "&q=" + location
-                js = requests.get(url).json()
-                if js["cod"] != "404":
-                    weather = js["main"]
-                    temperature = weather["temp"]
-                    temperature = temperature - 273.15
-                    humidity = weather["humidity"]
-                    desc = js["weather"][0]["description"]
-                    weatherResponse = " The temperature in Celcius is " + str(temperature) + " The humidity is " + str(
-                        humidity) + " and The weather description is " + str(desc)
-                    speak = speak + weatherResponse
-                else:
-                    speak = speak + "City Not Found"
+        if __name__ == '__main__':
 
-            elif "who are you" in text or "define yourself" in text:
-                speak = speak + "Hello, I am an Assistant. Your Assistant. I am here to make your life easier. You can command me to perform various tasks such as asking questions or opening applications etcetera"
+    uname=''
+    asname=''
+    os.system('cls')
+    wish()
+    getName()
+    print(uname)
 
-            elif "made you" in text or "created you" in text:
-                speak = speak + "I was created by Deon Cardoza"
+    while True:
 
-            elif "your name" in text:
-                speak = speak + "My name is Assistant"
+        command = takeCommand().lower()
+        print(command)
 
-            elif "who am I" in text:
-                speak = speak + "You must probably be a human"
+        if "jarvis" in command:
+            wish()
+            
+        elif 'how are you' in command:
+            speak("I am fine, Thank you")
+            speak("How are you, ")
+            speak(uname)
 
-            elif "why do you exist" in text or "why did you come to this word" in text:
-                speak = speak + "It is a secret"
+        elif "good morning" in command or "good afternoon" in command or "good evening" in command:
+            speak("A very" +command)
+            speak("Thank you for wishing me! Hope you are doing well!")
 
-            elif "how are you" in text:
-                speak = speak + "I am awesome, Thank you"
-                speak = speak + "\nHow are you?"
+        elif 'fine' in command or "good" in command:
+            speak("It's good to know that your fine")
+       
+        elif "who are you" in command:
+            speak("I am your virtual assistant.")
 
-            elif "fine" in text or "good" in text:
-                speak = speak + "It's good to know that your fine"
+        elif "change my name to" in command:
+            speak("What would you like me to call you, Sir or Madam ")
+            uname = takeCommand()
+            speak('Hello again,')
+            speak(uname)
+        
+        elif "change name" in command:
+            speak("What would you like to call me, Sir or Madam ")
+            assname = takeCommand()
+            speak("Thank you for naming me!")
 
-            elif "don't listen" in text or "stop listening" in text or "do not listen" in text:
-                talk("for how many seconds do you want me to sleep")
-                a = int(rec_audio())
-                time.sleep(a)
-                speak = speak + str(a) + " seconds completed. Now you can ask me anything"
+        elif "what's your name" in command:
+            speak("People call me")
+            speak(assname)
+        
+        elif 'time' in command:
+            strTime = datetime.datetime.now()
+            curTime=str(strTime.hour)+"hours"+str(strTime.minute)+"minutes"+str(strTime.second)+"seconds"
+            speak(uname)
+            speak(f" the time is {curTime}")
+            print(curTime)
 
-            elif "change background" in text or "change wallpaper" in text:
-                img = r"E:\...\images"
-                list_img = os.listdir(img)
-                imgChoice = random.choice(list_img)
-                randomImg = os.path.join(img, imgChoice)
-                ctypes.windll.user32.SystemParametersInfoW(20, 0, randomImg, 0)
-                speak = speak + "Background changed successfully"
+        elif 'wikipedia' in command:
+            speak('Searching Wikipedia')
+            command = command.replace("wikipedia", "")
+            results = wikipedia.summary(command, sentences = 3)
+            speak("These are the results from Wikipedia")
+            print(results)
+            speak(results)
 
-            elif "exit" in text or "quit" in text:
-                exit()
+        elif 'open youtube' in command:
+            speak("Here you go, the Youtube is opening\n")
+            webbrowser.open("youtube.com")
 
-            elif "open" in text.lower():
-                if "chrome" in text.lower():
-                    speak = speak + "Opening Google Chrome"
-                    os.startfile(
-                        r"C:\...\chrome.exe"
-                    )
+        elif 'open google' in command:
+            speak("Opening Google\n")
+            webbrowser.open("google.com")
 
-                elif "word" in text.lower():
-                    speak = speak + "Opening Microsoft Word"
-                    os.startfile(
-                        r"C:\...\WINWORD.EXE"
-                    )
+        elif 'play music' in command or "play song" in command:
+            speak("Enjoy the music!")
+            music_dir = "C:\\Users\\Bhuvana\\Music"
+            songs = os.listdir(music_dir)
+            print(songs)
+            random = os.startfile(os.path.join(music_dir, songs[1]))
 
-                elif "excel" in text.lower():
-                    speak = speak + "Opening Microsoft Excel"
-                    os.startfile(
-                        r"C:\...\EXCEL.EXE"
-                    )
+        elif 'joke' in command:
+            speak(pyjokes.get_joke())
+            
+        elif 'mail' in command:
+            try:
+                speak("Whom should I send the mail")
+                to = input()
+                speak("What is the body?")
+                content = takeCommand()
+                sendEmail(to, content)
+                speak("Email has been sent successfully !")
+            except Exception as e:
+                print(e)
+                speak("I am sorry, not able to send this email")
 
-                elif "vs code" in text.lower():
-                    speak = speak + "Opening Visual Studio Code"
-                    os.startfile(
-                        r"C:\...\Code.exe"
-                    )
+        elif 'exit' in command:
+            speak("Thanks for giving me your time")
+            exit()
 
-                elif "youtube" in text.lower():
-                    speak = speak + "Opening Youtube\n"
-                    webbrowser.open("https://youtube.com/")
+        elif "will you be my gf" in command or "will you be my bf" in command:
+            speak("I'm not sure about that, may be you should give me some time")
 
-                elif "google" in text.lower():
-                    speak = speak + "Opening Google\n"
-                    webbrowser.open("https://google.com/")
+        elif "i love you" in command:
+            speak("Thank you! But, It's a pleasure to hear it from you.")
 
-                elif "stackoverflow" in text.lower():
-                    speak = speak + "Opening StackOverFlow"
-                    webbrowser.open("https://stackoverflow.com/")
+        elif "weather" in command:
+            speak(" Please tell your city name ")
+            print("City name : ")
+            cityName = takeCommand()
+            getWeather(cityName)
 
-                else:
-                    speak = speak + "Application not available"
+        elif "what is" in command or "who is" in command:
+            
+            client = wolframalpha.Client("API_ID")
+            res = client.query(command)
 
-            elif "youtube" in text.lower():
-                ind = text.lower().split().index("youtube")
-                search = text.split()[ind + 1:]
-                webbrowser.open(
-                    "http://www.youtube.com/results?search_query=" +
-                    "+".join(search)
-                )
-                speak = speak + "Opening " + str(search) + " on youtube"
+            try:
+                print (next(res.results).text)
+                speak (next(res.results).text)
+            except StopIteration:
+                print ("No results")
 
-            elif "search" in text.lower():
-                ind = text.lower().split().index("search")
-                search = text.split()[ind + 1:]
-                webbrowser.open(
-                    "https://www.google.com/search?q=" + "+".join(search))
-                speak = speak + "Searching " + str(search) + " on google"
+        elif 'search' in command:
+            command = command.replace("search", "")
+            webbrowser.open(command)
 
-            elif "google" in text.lower():
-                ind = text.lower().split().index("google")
-                search = text.split()[ind + 1:]
-                webbrowser.open(
-                    "https://www.google.com/search?q=" + "+".join(search))
-                speak = speak + "Searching " + str(search) + " on google"
+        elif 'news' in command:
+            getNews()
+        
+        elif "don't listen" in command or "stop listening" in command:
+            speak("for how much time you want to stop me from listening commands")
+            a = int(takeCommand())
+            time.sleep(a)
+            print(a)
 
-            elif "play music" in text or "play song" in text:
-                talk("Here you go with music")
-                music_dir = r"...\Music"
-                songs = os.listdir(music_dir)
-                d = random.choice(songs)
-                random = os.path.join(music_dir, d)
-                playsound.playsound(random)
+        elif "camera" in command or "take a photo" in command:
+            ec.capture(0, "Jarvis Camera ", "img.jpg")
+        
+        elif 'shutdown system' in command:
+                speak("Hold On a Sec ! Your system is on its way to shut down")
+                subprocess.call('shutdown / p /f')
 
-            elif "joke" in text:
-                speak = speak + pyjokes.get_joke()
+        elif "restart" in command:
+            subprocess.call(["shutdown", "/r"])
 
-            elif "empty recycle bin" in text:
-                winshell.recycle_bin().empty(
-                    confirm=True, show_progress=False, sound=True
-                )
-                speak = speak + "Recycle Bin Emptied"
+        elif "sleep" in command:
+            speak("Setting in sleep mode")
+            subprocess.call("shutdown / h")
 
-            elif "email to computer" in text or "gmail to computer" in text:
-                try:
-                    talk("What should I say?")
-                    content = rec_audio()
-                    to = "Receiver email address"
-                    send_email(to, content)
-                    speak = speak + "Email has been sent !"
-                except Exception as e:
-                    print(e)
-                    talk("I am not able to send this email")
+        elif "write a note" in command:
+            speak("What should i write, sir")
+            note = takeCommand()
+            file = open('jarvis.txt', 'w')
+            speak("Sir, Should i include date and time")
+            snfm = takeCommand()
+            if 'yes' in snfm or 'sure' in snfm:
+                strTime = datetime.datetime.now().strftime("% H:% M:% S")
+                file.write(strTime)
+                file.write(" :- ")
+                file.write(note)
+            else:
+                file.write(note)
+        else:
+            speak("Sorry, I am not able to understand you")
 
-            elif "mail" in text or "email" in text or "gmail" in text:
-                try:
-                    talk("What should I say?")
-                    content = rec_audio()
-                    talk("whom should i send")
-                    to = input("Enter To Address: ")
-                    send_email(to, content)
-                    speak = speak + "Email has been sent !"
-                except Exception as e:
-                    print(e)
-                    speak = speak + "I am not able to send this email"
+            #Creating the main window 
+wn = tkinter.Tk() 
+wn.title("DataFlair Voice Assistant")
+wn.geometry('700x300')
+wn.config(bg='LightBlue1')
+  
+Label(wn, text='Welcome to meet the Voice Assistant by DataFlair', bg='LightBlue1',
+      fg='black', font=('Courier', 15)).place(x=50, y=10)
 
-            elif "make a note" in text:
-                talk("What would you like me to write down?")
-                note_text = rec_audio()
-                note(note_text)
-                speak = speak + "I have made a note of that."
+#Button to convert PDF to Audio form
+Button(wn, text="Start", bg='gray',font=('Courier', 15),
+       command=callVoiceAssistant).place(x=290, y=100)
 
-            elif "news" in text:
-                url = (
-                    "http://newsapi.org/v2/top-headlines?"
-                    "country=in&"
-                    "apiKey="
-                )
+showCommand=StringVar()
+cmdLabel=Label(wn, textvariable=showCommand, bg='LightBlue1',
+      fg='black', font=('Courier', 15))
+cmdLabel.place(x=250, y=150)
 
-                try:
-                    response = requests.get(url)
-                except:
-                    talk("Please check your connection")
-
-                news = json.loads(response.text)
-
-                for new in news["articles"]:
-                    print(str(new["title"]), "\n")
-                    talk(str(new["title"]))
-                    engine.runAndWait()
-
-                    print(str(new["description"]), "\n")
-                    talk(str(new["description"]))
-                    engine.runAndWait()
-                    time.sleep(2)
-
-            elif "send message" in text:
-                account_sid = ""
-                auth_token = ""
-                client = Client(account_sid, auth_token)
-
-                talk("What should i send")
-                message = client.messages.create(
-                    body=rec_audio(), from_="", to=""
-                )
-
-                print(message.sid)
-                speak = speak + "Message sent successfully"
-
-            elif "calculate" in text or 'send a message' in text:
-                app_id = ""
-                client = wolframalpha.Client(app_id)
-                ind = text.lower().split().index("calculate")
-                text = text.split()[ind + 1:]
-                res = client.query(" ".join(text))
-                answer = next(res.results).text
-                speak = speak + "The answer is " + answer
-
-            elif "what is" in text or "who is" in text:
-                app_id = ""
-                client = wolframalpha.Client(app_id)
-                ind = text.lower().split().index("is")
-                text = text.split()[ind + 1:]
-                res = client.query(" ".join(text))
-                answer = next(res.results).text
-                speak = speak + answer
-
-            elif "order a pizza" in text or "pizza" in text:
-                pizza()
-
-
-
-            # Assistant Audio speak
-            response(speak)
-
-    except:
-        talk("I don't know that")
+#Runs the window till it is closed
+wn.mainloop()
