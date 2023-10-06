@@ -1,0 +1,39 @@
+Output of Python Voice Assistant project
+Here is the output on the console of the voice assistant.
+
+Wishing.
+I am your Voice Assistant from DataFlair, Jasper 1 point o
+Listening to the user
+Recognizing the command
+Command is: Bob
+Name: Bob
+Bob
+Listening to the user
+Recognizing the command
+Command is: how are you
+how are you
+Listening to the user
+Recognizing the command
+Command is: fine
+fine
+Listening to the user
+Recognizing the command
+Command is: can I know time
+can i know time
+22hours31minutes57seconds
+Listening to the user
+Recognizing the command
+Unable to Recognize the voice.
+none
+Listening to the user
+Recognizing the command
+Command is: open Google
+open google
+Listening to the user
+Recognizing the command
+Unable to Recognize the voice.
+none
+Listening to the user
+Recognizing the command
+Command is: exit
+exit
